@@ -3,4 +3,5 @@ Catan is such a game of strategy that it's annoying when you're hit with bad luc
 
 To run this app, simply download the repository, navigate to the repository in your terminal, and run  
 ```streamlit run CatanDice.py```  
-It will open in a browser window, but there is no need for an internet connection.
+It will open in a browser window, but there is no need for an internet connection.  
+If you are having trouble installing streamlit, run ```conda install -c conda-forge watchdog``` then ```pip install streamlit```
