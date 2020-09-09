@@ -96,12 +96,17 @@ def main():
         player_history.pop()
 
         # Display the results
-        prev_roll = roll_history[-1]
-        prev_player = players[player_history[-1]]
-        number_text.markdown(f"<h1 {num_style(prev_roll)}> {prev_roll} "
-                             "</h1>", unsafe_allow_html=True)
-        player_name_text.markdown(f"<h1 {name_style}> {prev_player} </h1>",
-                                  unsafe_allow_html=True)
+        if roll_history:
+            prev_roll = roll_history[-1]
+            prev_player = players[player_history[-1]]
+            number_text.markdown(f"<h1 {num_style(prev_roll)}> {prev_roll} "
+                                 "</h1>", unsafe_allow_html=True)
+            player_name_text.markdown(f"<h1 {name_style}> {prev_player} </h1>",
+                                      unsafe_allow_html=True)
+        else:
+            number_text.image(dice_image, use_column_width=True)
+            player_name_text.markdown(f"<h1 {name_style}> Roll to start game! "
+                                      "</h1>", unsafe_allow_html=True)
 
     elif reset_button:
         st.caching.clear_cache()
@@ -111,12 +116,17 @@ def main():
         apply_placeholder = apply_placeholder.empty()
 
     elif edit_params_button:
-        current_player = players[player_history[-1]]
-        current_roll = roll_history[-1]
-        number_text.markdown(f"<h1 {num_style(current_roll)}> {current_roll} "
-                         "</h1>", unsafe_allow_html=True)
-        player_name_text.markdown(f"<h1 {name_style}> {current_player} </h1>",
-                                  unsafe_allow_html=True)
+        if player_history:
+            current_player = players[player_history[-1]]
+            current_roll = roll_history[-1]
+            number_text.markdown(f"<h1 {num_style(current_roll)}> {current_roll} "
+                             "</h1>", unsafe_allow_html=True)
+            player_name_text.markdown(f"<h1 {name_style}> {current_player} </h1>",
+                                      unsafe_allow_html=True)
+        else:
+            number_text.image(dice_image, use_column_width=True)
+            player_name_text.markdown(f"<h1 {name_style}> Roll to start game! "
+                                      "</h1>", unsafe_allow_html=True)
 
     elif stats_button:
         player_name_text.markdown(f"<h1 {name_style}> Good Game! "
