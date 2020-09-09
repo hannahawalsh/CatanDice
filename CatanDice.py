@@ -20,28 +20,18 @@ def main():
     # Get cached variables
     roll_history = get_roll_history()
     player_history = get_player_history()
-    game_state = get_game_states()
-    current_state = game_state[-1]
 
     # Set up sidebar layout
     st.sidebar.title("Game Options")
     apply_placeholder = st.sidebar.empty()
-    players_radio = st.sidebar.radio("Number of Players", [3, 4],
-                                        index=1, format_func=int)
-    player1 = st.sidebar.text_input("Player 1", "Player 1")
-    player2 = st.sidebar.text_input("Player 2", "Player 2")
-    player3 = st.sidebar.text_input("Player 3", "Player 3")
-    players = {0: player1, 1: player2, 2: player3}
-    if players_radio == 4:
-        player4 = st.sidebar.text_input("Player 4", "Player 4")
-        players[3] = player4
-
-    random_rate_slider = st.sidebar.slider("Randomness Parameter",
-                                            0.0, 1.0, 0.15)
-    convergence_rate_slider = st.sidebar.slider("Convergence Rate",
-                                                0.0, 1.0, 0.5)
-    convergence_rate_slider = convergence_rate_slider * 250 + 200
-    random_turns_slider = st.sidebar.slider("Starting Random Turns", 1, 32, 8)
+    radio = st.sidebar.empty()
+    p1 = st.sidebar.empty()
+    p2 = st.sidebar.empty()
+    p3 = st.sidebar.empty()
+    p4 = st.sidebar.empty()
+    rand_rate = st.sidebar.empty()
+    conv_rate = st.sidebar.empty()
+    rand_turns = st.sidebar.empty()
 
     # Set up main page layout and buttons
     number_text = st.empty()
@@ -56,6 +46,24 @@ def main():
     ###
     # trial_button = st.button("Roll 100 times")
     ###
+
+    # Add in widgets
+    players_radio = radio.radio("Number of Players", [3, 4],
+                                        index=1, format_func=int)
+    player1 = p1.text_input("Player 1", "Player 1")
+    player2 = p2.text_input("Player 2", "Player 2")
+    player3 = p3.text_input("Player 3", "Player 3")
+    players = {0: player1, 1: player2, 2: player3}
+    if players_radio == 4:
+        player4 = p4.text_input("Player 4", "Player 4")
+        players[3] = player4
+    random_rate_slider = rand_rate.slider("Randomness Parameter",
+                                            0.0, 1.0, 0.15)
+    convergence_rate_slider = conv_rate.slider("Convergence Rate",
+                                                0.0, 1.0, 0.5)
+    convergence_rate_slider = convergence_rate_slider * 250 + 200
+    random_turns_slider = rand_turns.slider("Starting Random Turns", 1, 32, 8)
+
 
     # define styles
     name_style = ("style='text-align: center; font-size: 4.0em; "
@@ -81,7 +89,7 @@ def main():
         if not player_history:
             current_player = 0
         else:
-            current_player = int((player_history[-1] + 1) % 4)
+            current_player = int((player_history[-1] + 1) % len(players))
         player_name = players[current_player]
         player_history.append(current_player)
 
@@ -155,10 +163,6 @@ def get_roll_history():
 @st.cache(allow_output_mutation=True)
 def get_player_history():
     return []
-
-@st.cache(allow_output_mutation=True)
-def get_game_states():
-    return ["Start"]
 
 def normalize_dict(D):
     new = {k: v / sum(D.values()) for k, v in D.items()}
