@@ -85,12 +85,12 @@ def main():
 
     ### Statistics section
     update_stats = stats_cont.button("Get Current Statistics")
-    # if update_stats:
-    player_names = [players[k] for k in sorted(players)]
-    fig, stats, turns = Dice().game_stats(roll_history, player_names)
-    stats_cont.pyplot(fig=fig)
-    stats_cont.table(stats)
-    stats_cont.table(turns)
+    if update_stats:
+        player_names = [players[k] for k in sorted(players)]
+        fig, stats, turns = Dice().game_stats(roll_history, player_names)
+        stats_cont.pyplot(fig=fig)
+        stats_cont.table(stats)
+        stats_cont.table(turns)
 
     ### Display name and number (or starting text and image)
     if not roll_history:
@@ -125,4 +125,4 @@ if __name__ == "__main__":
 
 
 ### Future possible features:
-# Players get colors: change player's names and plot color 
+# Players get colors: change player's names and plot color
