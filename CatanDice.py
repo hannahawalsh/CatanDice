@@ -5,13 +5,15 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 import matplotlib.pyplot as plt
+from matplotlib import colors
+
+from DiceFunctions import StreamlitStyle as SS, Dice
 
 
 def main():
     """ """
     ### Set up sidebar
     st.sidebar.title("Game Options")
-    apply_placeholder = st.sidebar.empty()
     players_radio = st.sidebar.radio("Number of Players", [3, 4], index=1)
     player1 = st.sidebar.text_input("Player 1", "Player 1")
     player2 = st.sidebar.text_input("Player 2", "Player 2")
@@ -27,45 +29,36 @@ def main():
 
 
     ### Set up main page
-    title_style = ("style='text-align: center; font-size: 4.0em; "
+    title_text = ("<h1 style='text-align: center; font-size: 4.0em; "
                    "color: gold; background-color: maroon; "
-                   "font-family: Georgia;'")
-    st.markdown(f"<h1 {title_style}> CATAN DICE </h1>", unsafe_allow_html=True)
+                   "font-family: Georgia;'> CATAN DICE </h1>")
+    st.markdown(title_text, unsafe_allow_html=True)
 
     number_text = st.empty()
     player_name_text = st.empty()
-    display_space = st.beta_container()
+    buttons = st.beta_container()
+    stats_cont = st.beta_expander("Game Statistics", False)
 
-    _, roll_space, _ = st.beta_columns(3)
-    roll_button = roll_space.button("Roll!")
-    b1, b2, b3 = st.beta_columns(3)
+    b1, b2, b3 = buttons.beta_columns(3)
     reset_button = b1.button("Reset")
-    undo_button = b2.button("Undo")
-    stats_button = b3.button("Statistics")
+    roll_button = b2.button("Roll!")
+    undo_button = b3.button("Undo")
     ###
-    trial_button = b2.button("**Roll 500 times**")
+    trial_button = b2.button("**Roll 50 times**")
     ###
-
 
     ### Get cached variables
     roll_history = get_roll_history()
     player_history = get_player_history()
 
-    # get_number_text, get_name_text
-    ### Define actions
-    if not roll_history:
-        number_text.image(dice_image, use_column_width=True)
-        player_name_text.markdown(get_name_text("Roll to start game!"),
-                                  unsafe_allow_html=True)
-    edit_params_button = apply_placeholder.button("Apply Changes")
-
+    ### Actions
     if roll_button:
-        # ROll and add to history
-        next_roll = dice_roll(roll_history, random_turns_slider,
+        # Roll the dice
+        next_roll = Dice().roll(roll_history, random_turns_slider,
                               random_rate_slider, convergence_rate_slider)
         roll_history.append(next_roll)
 
-        # Add player to the history
+        # Update the player
         if not player_history:
             current_player = 0
         else:
@@ -73,166 +66,63 @@ def main():
         player_name = players[current_player]
         player_history.append(current_player)
 
-        # Display the results
-        number_text.markdown(get_number_text(next_roll), unsafe_allow_html=True)
-        player_name_text.markdown(get_name_text(player_name),
-                                  unsafe_allow_html=True)
-
+    # "Undo" removes last turn from history
     elif undo_button:
-        _ = roll_history.pop()
-        _ = player_history.pop()
+        roll_history.pop()
+        player_history.pop()
 
-        # Display the results
-        if roll_history:
-            prev_roll = roll_history[-1]
-            prev_player = players[player_history[-1]]
-            number_text.markdown(get_number_text(prev_roll),
-                                 unsafe_allow_html=True)
-            player_name_text.markdown(get_name_text(prev_player),
-                                      unsafe_allow_html=True)
-        else:
-            number_text.image(dice_image, use_column_width=True)
-            player_name_text.markdown(get_name_text("Roll to start game!"),
-                                      unsafe_allow_html=True)
-
+    # "Reset" clears the cache and the history
     elif reset_button:
         st.caching.clear_cache()
-        number_text.image(dice_image, use_column_width=True)
-        player_name_text.markdown(get_name_text("Roll to start game!"),
-                                  unsafe_allow_html=True)
-        apply_placeholder.empty()
+        roll_history = player_history = None
 
-    elif edit_params_button:
-        if player_history:
-            current_player = players[player_history[-1]]
-            current_roll = roll_history[-1]
-            number_text.markdown(get_number_text(current_roll),
-                                 unsafe_allow_html=True)
-            player_name_text.markdown(get_name_text(current_player),
-                                      unsafe_allow_html=True)
-        else:
-            number_text.image(dice_image, use_column_width=True)
-            player_name_text.markdown(get_name_text("Roll to start game!"),
-                                      unsafe_allow_html=True)
-
-    elif stats_button:
-        player_name_text.markdown(get_name_text("Good Game!"),
-                                  unsafe_allow_html=True)
-        player_names = [players[k] for k in sorted(players)]
-        rsts_fig, stats, turns = analyze_results(roll_history, player_names)
-        display_space.pyplot(fig=rsts_fig)
-        display_space.write(stats)
-        display_space.write(turns)
-
+    # Temporary: roll a bunch of times
     elif trial_button:
-        for _ in range(500):
-            next_roll = dice_roll(roll_history, random_turns_slider,
+        for _ in range(50):
+            next_roll = Dice().roll(roll_history, random_turns_slider,
                                   random_rate_slider, convergence_rate_slider)
             roll_history.append(next_roll)
-        number_text.markdown(get_number_text(len(roll_history)),
+
+    ### Statistics section
+    update_stats = stats_cont.button("Get Current Statistics")
+    # if update_stats:
+    player_names = [players[k] for k in sorted(players)]
+    fig, stats, turns = Dice().game_stats(roll_history, player_names)
+    stats_cont.pyplot(fig=fig)
+    stats_cont.table(stats)
+    stats_cont.table(turns)
+
+    ### Display name and number (or starting text and image)
+    if not roll_history:
+        number_text.image(dice_image, use_column_width=True)
+        player_name_text.markdown(SS.get_name_text("Roll to start game!"),
+                                  unsafe_allow_html=True)
+    else:
+        number_text.markdown(SS.get_number_text(roll_history[-1]),
                              unsafe_allow_html=True)
+        player_name = players[player_history[-1]]
+        player_name_text.markdown(SS.get_name_text(player_name),
+                                  unsafe_allow_html=True)
 
 
-
-
+### Cached Functions
 @st.cache(allow_output_mutation=True)
 def get_roll_history():
     return []
-
 
 @st.cache(allow_output_mutation=True)
 def get_player_history():
     return []
 
 
-def get_number_text(n):
-    """ Given a number, return the html for displaying it"""
-    color = "red" if n in [6, 8] else "black"
-    style = ("<h1 style='text-align: center; font-size: 12.0em; "
-             f"font-family: Arial Black; padding: 0px; color: {color};'> "
-             f"{n} </h1>")
-    return style
-
-
-def get_name_text(name):
-    """ Given a player's name, return the html for displaying it """
-    style = ("<h1 style='text-align: center; font-size: 4.0em; font-family:"
-             f" Arial; padding: 0px'> {name} </h1>")
-    return style
-
-
-def normalize_dict(D):
-    """ Return a dictionary with values normalized and missing values at 0 """
-    new = {k: v / sum(D.values()) for k, v in D.items()}
-    missing_vals = [x for x in range(2, 13) if x not in new.keys()]
-    new = {**new, **{m: 0.0 for m in missing_vals}}
-    return {k: new[k] for k in range(2, 13)}
-
-
-def dice_roll(roll_history, first, random_rate, convergence_rate):
-    """
-    """
-    def gambler_weights(rate, current_weights):
-        """ """
-        new = {roll: 2 ** (rate * (fair_weights[roll] - current_weights[roll]))
-               for roll in range(2, 13)}
-        return normalize_dict(new)
-
-    if len(roll_history) <= first or np.random.random() <= random_rate:
-        roll = np.random.choice(list(fair_weights.keys()),
-                                p=list(fair_weights.values()))
-    else:
-        past_frequency = normalize_dict(Counter(roll_history))
-        new_weights = gambler_weights(convergence_rate, past_frequency)
-        roll = np.random.choice(list(new_weights.keys()),
-                                p=list(new_weights.values()))
-    return roll
-
-
-def analyze_results(roll_history, player_names):
-    # Get rolls per player
-    n_plrs = len(player_names)
-    player_rolls = {p: roll_history[i::n_plrs] for i, p in
-                    enumerate(player_names)}
-    player_freqs = {p: {k: v/len(rs) for k, v in Counter(rs).items()}
-                    for p, rs in player_rolls.items()}
-    player_freqs = pd.DataFrame(player_freqs).sort_index()
-    fair_series = pd.Series(fair_weights, name="Theoretical")
-    all_roll_freq = pd.Series(normalize_dict(Counter(roll_history)),
-                              name="All")
-    frequencies = pd.concat([fair_series, all_roll_freq, player_freqs], axis=1)
-    frequencies.reset_index(inplace=True)
-    frequencies.rename(columns={"index": "Roll"}, inplace=True)
-    plot_x = range(2, 13)
-    # Create frequency plot
-    freq_plot, freq_ax = plt.subplots(figsize=(20, 10))
-    freq_ax.set_xlim(1, 13)
-    frequencies.drop(columns=["Theoretical", "All"]).plot(x="Roll",
-                     kind="bar", ax=freq_ax,
-                      color=["red", "blue", "green", "orange"])
-    frequencies["Theoretical"].plot(x="Roll", style="*-", color="Fuchsia",
-                                    ax=freq_ax, markersize=25, linewidth=3)
-    frequencies["All"].plot(x="Roll", style=".-k", ax=freq_ax,
-                            markersize=25, linewidth=3)
-    # freq_ax.set_xlim(0, 14)
-    freq_ax.set_title("Roll Frequencies By Player", fontsize=36)
-    freq_ax.set_xlabel("Roll", fontsize=20)
-    freq_ax.legend()
-
-    # Create game statistics
-    roll_breakdown = frequencies.copy().fillna(0.0)
-    turn_count = pd.DataFrame({**{k: len(v) for k, v in player_rolls.items()},
-                               "All": len(roll_history)}, index=["Rolls"])
-
-    return freq_plot, roll_breakdown, turn_count
-
-
 
 
 if __name__ == "__main__":
-    fair_weights = {**{i: (i-1)/36 for i in range(2, 8)}, **{i: (13-i)/36 for
-                    i in range(8, 13)}}
     dice_image = Image.open("DicePic.png")
     st.set_page_config(page_title="Gambler's Fallacy Dice",
                        page_icon="🎲", layout="centered")
     main()
+
+
+### Future possible features:
+# Players get colors: change player's names and plot color 
