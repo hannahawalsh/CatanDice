@@ -101,28 +101,21 @@ def main():
 
 
     ### Statistics section
-    update_stats = stats_cont.button("Get Current Statistics")
-    # if "updated_turn" in stats_history:
-    #     stats_history["updated_turn"] += 1
-    # else:
-    #     stats_history["updated_turn"] = 0
+    player_names = [players[k] for k in sorted(players)]
+    fig, stats, turns, freqs = Dice().game_stats(roll_history, player_names)
+    stats_history["updated_turn"] = 0
+    stats_history["fig"] = fig
+    stats_history["stats"] = stats
+    stats_history["turns"] = turns
+    stats_history["frequency_df"] = freqs
+    stats_cont.markdown("## Current Stats:")
 
-    if update_stats:
-        player_names = [players[k] for k in sorted(players)]
-        fig, stats, turns = Dice().game_stats(roll_history, player_names)
-        stats_history["updated_turn"] = 0
-        stats_history["fig"] = fig
-        stats_history["stats"] = stats
-        stats_history["turns"] = turns
-        stats_cont.markdown("## Current Stats:")
-    elif "stats" in stats_history:
-        stats_cont.markdown(f"## Stats from {stats_history['updated_turn']} "
-                            "turns ago:")
-
-    if "stats" in stats_history:
-        stats_cont.write(stats_history["fig"])
-        stats_cont.table(stats_history["stats"])
-        stats_cont.table(stats_history["turns"])
+    update_plot = stats_cont.button("Get Updated Plot")
+    plot_spot = stats_cont.empty()
+    stats_cont.table(stats_history["stats"])
+    stats_cont.table(stats_history["turns"])
+    if update_plot:
+        plot_spot.write(stats_history["fig"])
 
     ### Display name and number (or starting text and image)
     if not roll_history:
