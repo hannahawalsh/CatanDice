@@ -6,6 +6,7 @@ import streamlit as st
 from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from sklearn.metrics import mean_squared_error as mse
 
 from DiceFunctions import StreamlitStyle as SS, Dice
 
@@ -50,12 +51,13 @@ def main():
     ### Get cached variables
     roll_history = get_roll_history()
     player_history = get_player_history()
+    stats_history = get_statistics_history()
 
     ### Actions
     if roll_button:
         # Roll the dice
         next_roll = Dice().roll(roll_history, random_turns_slider,
-                              random_rate_slider, convergence_rate_slider)
+                                random_rate_slider, convergence_rate_slider)
         roll_history.append(next_roll)
 
         # Update the player
@@ -76,21 +78,36 @@ def main():
         st.caching.clear_cache()
         roll_history = player_history = None
 
-    # Temporary: roll a bunch of times
+    ### Temporary:
+    # roll a bunch of times
     elif trial_button:
-        for _ in range(50):
-            next_roll = Dice().roll(roll_history, random_turns_slider,
-                                  random_rate_slider, convergence_rate_slider)
-            roll_history.append(next_roll)
+        n = 50
+        next_rolls = [Dice().roll(roll_history, random_turns_slider,
+                      random_rate_slider, convergence_rate_slider) for _ in
+                      range(n)]
+        roll_history.extend(next_rolls)
+        next_p = (player_history[-1] + 1) % 4 if player_history else 0
+        player_history.extend([x % 4 for x in range(next_p, n + next_p)])
+    ###
+
 
     ### Statistics section
-    update_stats = stats_cont.button("Get Current Statistics")
-    if update_stats:
-        player_names = [players[k] for k in sorted(players)]
-        fig, stats, turns = Dice().game_stats(roll_history, player_names)
-        stats_cont.pyplot(fig=fig)
-        stats_cont.table(stats)
-        stats_cont.table(turns)
+    player_names = [players[k] for k in sorted(players)]
+    fig, stats, turns, freqs = Dice().game_stats(roll_history, player_names)
+    stats_history["updated_turn"] = 0
+    stats_history["fig"] = fig
+    stats_history["stats"] = stats
+    stats_history["turns"] = turns
+    stats_history["frequency_df"] = freqs
+    stats_cont.markdown("## Current Stats:")
+
+    update_plot = stats_cont.button("Get Updated Plot")
+    plot_spot = stats_cont.empty()
+    stats_cont.table(stats_history["stats"])
+    stats_cont.table(stats_history["turns"])
+    if update_plot:
+        plot_spot.write(stats_history["fig"])
+
 
     ### Display name and number (or starting text and image)
     if not roll_history:
@@ -114,6 +131,10 @@ def get_roll_history():
 def get_player_history():
     return []
 
+@st.cache(allow_output_mutation=True)
+def get_statistics_history():
+    return {}
+
 
 
 
@@ -124,5 +145,6 @@ if __name__ == "__main__":
     main()
 
 
-### Future possible features:
+### Future things:
+# Work on math element!
 # Players get colors: change player's names and plot color
