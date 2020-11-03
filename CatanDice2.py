@@ -15,12 +15,17 @@ def main():
     ### Set up sidebar
     st.sidebar.title("Game Options")
     players_radio = st.sidebar.radio("Number of Players", [3, 4], index=1)
-    player1 = st.sidebar.text_input("Player 1", "Player 1")
-    player2 = st.sidebar.text_input("Player 2", "Player 2")
-    player3 = st.sidebar.text_input("Player 3", "Player 3")
+    col1, _, col2 = st.sidebar.beta_columns([7, 1, 2])
+    player1 = col1.text_input("Player 1", "Player 1")
+    color1 = col2.color_picker(f"{player1}'s Color", key="c1")
+    player2 = col1.text_input("Player 2", "Player 2")
+    color2 = col2.color_picker(f"{player2}'s Color", key="c2")
+    player3 = col1.text_input("Player 3", "Player 3")
+    color3 = col2.color_picker(f"{player3}'s Color", key="c3")
     players = {0: player1, 1: player2, 2: player3}
     if players_radio == 4:
-        player4 = st.sidebar.text_input("Player 4", "Player 4")
+        player4 = col1.text_input("Player 4", "Player 4")
+        color4 = col2.color_picker(f"{player4}'s Color", key="c1")
         players[3] = player4
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
