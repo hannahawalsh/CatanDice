@@ -1,12 +1,29 @@
-from collections import Counter
 import numpy as np
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
-from matplotlib import colors
-from sklearn.metrics import mean_squared_error as mse
-import altair as alt
+from collections import Counter
 
+import matplotlib.pyplot as plt
+from matplotlib import colors, cm
+import altair as alt
+import pyautogui
+from sklearn.metrics import mean_squared_error as mse
+
+
+
+def adjust_colors(color_list):
+    """ If a color is too light, make it a bit darker"""
+    for i, clr in enumerate(color_list):
+        rgb_col = colors.to_rgb(clr)
+        if sum(rgb_col) >= 2.5:
+            darkened = [min(1.0, x * 0.925) for x in rgb_col]
+            color_list[i] = colors.to_hex(darkened)
+    return color_list
+
+
+class VAR:
+    fair_wts = {**{i: (i-1)/36 for i in range(2, 8)},
+                **{i: (13-i)/36 for i in range(8, 13)}}
 
 
 class StreamlitStyle:
@@ -19,11 +36,17 @@ class StreamlitStyle:
                  f"{n} </h1>")
         return style
 
-    def get_name_text(name):
+
+    def get_name_text(name, color="#000000"):
         """ Given a player's name, return the html for displaying it """
+        color = adjust_colors([color])[0]
+        font_color = "black" if sum(colors.to_rgb(color)) >= 2.0 else "white"
+
         style = ("<h1 style='text-align: center; font-size: 4.0em; font-family:"
-                 f" Arial; padding: 0px'> {name} </h1>")
+                 f" Arial; padding: 10px; color: {font_color}; background: "
+                 f"{color};'> <span> {name} </span> </h1>")
         return style
+
 
     def style_frequencies(df):
         color_results = pd.DataFrame(columns=df.columns, index=df.index)
@@ -45,12 +68,8 @@ class StreamlitStyle:
                               axis=0).set_precision(3)
 
 
+
 class Dice:
-    def __init__(self):
-        self.fair_weights = {**{i: (i-1)/36 for i in range(2, 8)},
-                             **{i: (13-i)/36 for i in range(8, 13)}}
-
-
     def calculate_frequencies(self, roll_history, player_names):
         """
         Calculate the roll frequencies for the game and each player.
@@ -60,7 +79,7 @@ class Dice:
         player_freqs = {p: {k: v/len(rs) for k, v in Counter(rs).items()}
                         for p, rs in player_rolls.items()}
         player_freqs = pd.DataFrame(player_freqs).sort_index()
-        fair_series = pd.Series(self.fair_weights, name="Theoretical")
+        fair_series = pd.Series(VAR.fair_wts, name="Theoretical")
         all_roll_freq = pd.Series(self.normalize_dict(Counter(
                                   roll_history)), name="All")
         frequencies = pd.concat([fair_series, all_roll_freq, player_freqs],
@@ -81,7 +100,7 @@ class Dice:
 
     def gambler_weights(self, rate, current_weights):
         """ """
-        new = {roll: 2 ** (rate * (self.fair_weights[roll] -
+        new = {roll: 2 ** (rate * (VAR.fair_wts[roll] -
                current_weights[roll])) for roll in range(2, 13)}
         return self.normalize_dict(new)
 
@@ -90,8 +109,8 @@ class Dice:
         """
         """
         if len(roll_history) <= first or np.random.random() <= random_rate:
-            roll = np.random.choice(list(self.fair_weights.keys()),
-                                    p=list(self.fair_weights.values()))
+            roll = np.random.choice(list(VAR.fair_wts.keys()),
+                                    p=list(VAR.fair_wts.values()))
         else:
             past_frequency = self.normalize_dict(Counter(roll_history))
             new_weights = self.gambler_weights(convergence_rate,
@@ -107,8 +126,8 @@ class Dice:
         """
         # Randomly roll with fair weights
         if len(roll_history) <= first or np.random.random() <= random_rate:
-            roll = np.random.choice(list(self.fair_weights.keys()),
-                                    p=list(self.fair_weights.values()))
+            roll = np.random.choice(list(VAR.fair_wts.keys()),
+                                    p=list(VAR.fair_wts.values()))
         else:
             # Get all player + current player frequencies
             freq_df, _ = self.calculate_frequencies(roll_history, player_names)
@@ -123,12 +142,6 @@ class Dice:
                                       p=list(new_player_weights.values()))
             a_roll = np.random.choice(list(new_all_weights.keys()),
                                       p=list(new_all_weights.values()))
-
-            # Randomly select one of those rolls, weighting the probability by
-            # the current roll numnber
-            # p_weight = min(len(roll_history), 45) / 50
-            # a_weight = 1 - p_weight
-            # roll = np.random.choice([p_roll, a_roll], p=[p_weight, a_weight])
             roll = np.random.choice([p_roll, a_roll])
         return roll
 
@@ -170,3 +183,151 @@ class Dice:
         turn_count = pd.DataFrame({**{k: len(v) for k, v in player_rolls.items()
                                   }, "All": len(roll_history)}, index=["Rolls"])
         return freq_plot, roll_breakdown, turn_count, freqs
+
+
+    def plot_difference(roll_history, player_names):
+        freqs, player_rolls = self.calculate_frequencies(roll_history,
+                                                         player_names)
+
+
+
+
+class PlotResults:
+    def __init__(self, roll_history, player_names, player_colors):
+        """   """
+        self.roll_history = roll_history
+        self.player_names = player_names
+        self.player_colors = adjust_colors(list(player_colors.values()))
+        self.screen_width  = pyautogui.size().width
+
+        # Data frame of all turns with customers
+        n = len(roll_history)
+        self.turns = pd.DataFrame({"Player": (player_names * n)[:n],
+                                   "Roll": roll_history})
+
+        # All game roll counts
+        h_cnt = self.turns["Roll"].value_counts()
+        h_cnt = pd.concat([h_cnt, pd.Series(VAR.fair_wts) * n],
+                           axis=1).reset_index()
+        h_cnt.columns = ["Roll", "Count", "Expected"]
+        h_cnt["Difference"] = h_cnt["Count"] - h_cnt["Expected"]
+        self.history_count = h_cnt.fillna(0)
+
+        # Per-player roll counts
+        rl_grp = self.turns.groupby("Player")["Roll"]
+        get_expected = lambda grp: pd.Series(VAR.fair_wts) * len(grp)
+        p_cnt = pd.concat([rl_grp.value_counts().rename("Count"),
+                           rl_grp.apply(get_expected)], axis=1).reset_index()
+        p_cnt.columns = ["Player", "Roll", "Count", "Expected"]
+        p_cnt["Difference"] = p_cnt["Count"] - p_cnt["Expected"]
+        self.player_count = p_cnt.fillna(0)
+
+
+    def get_turn_count(self):
+        cnts = pd.DataFrame(self.turns.groupby("Player").count().to_dict("index"))
+        cnts["All"] = len(self.turns)
+        cnts.index = ["Turn Count"]
+        return cnts
+
+
+    def get_divergence_chart(self):
+        """   """
+        # Get colors for bars
+        cmap = cm.get_cmap('RdYlGn', 100)
+        normalize = lambda s: (s - s.min()) / (s.max() - s.min())
+        rdiffs = normalize(self.history_count["Difference"])
+        roll_colors = [colors.to_hex(cmap(int(100 * d))) for d in rdiffs]
+
+        # Make Altair horizontal bar chart
+        plt_df = self.history_count.round(2)
+        diff_chart = alt.Chart(plt_df).mark_bar(size=30).encode(
+            y='Roll:O',
+            x='Difference:Q',
+            color=alt.Color('Roll:Q', legend=None, scale=alt.Scale(
+                domain=self.history_count.Roll.to_list(), range=roll_colors)),
+            tooltip=list(plt_df.columns)
+        ).properties(
+            title="Roll Differential from Expected Count",
+            width=self.screen_width / 2,
+            height=alt.Step(32)
+            )
+
+        diff_chart = diff_chart.configure_title(
+            fontSize=32,
+            dy=-50,
+            limit=600,
+            font="Arial",
+            align="center"
+        )
+
+        return diff_chart
+
+
+    def player_roll_chart(self):
+        """ """
+        # Make Altair bark chart
+        plt_df = self.player_count.round(2)
+        roll_chart = alt.Chart(plt_df).mark_bar().encode(
+            x=alt.X("Player:O", axis=alt.Axis(title=None, labels=False,
+                    ticks=False)),
+            y='Count:Q',
+            color=alt.Color('Player:N', scale=alt.Scale(
+                            domain=self.player_names, range=self.player_colors),
+                            legend=alt.Legend()),
+            column=alt.Column("Roll:N", header=alt.Header(title=None,
+                              labelOrient="bottom", labelFontSize=22)),
+            tooltip=list(self.player_count.columns)
+        ).configure_view(
+            strokeWidth=0
+        ).configure_title(
+            fontSize=32, limit=800, dx=45, dy=-50,
+            font="Arial", align="center", anchor="middle"
+        ).configure_legend(
+            strokeColor="black", padding=10, orient="bottom", cornerRadius=10,
+            direction="horizontal", labelFontSize=10
+        ).properties(
+            title="Roll Count by Player",
+            width=self.screen_width / 45
+        )
+
+        roll_chart = roll_chart.configure_axis(
+            grid=False, labelFontSize=18
+            )
+
+
+        return roll_chart
+
+
+    def player_diff_chart(self):
+        """ Create an Altair chart showing difference from expected rolls """
+        # Create chart
+        plt_df = self.player_count.round(2)
+        p_diff_chart = alt.Chart(plt_df).mark_bar().encode(
+            x=alt.X("Player:O", axis=alt.Axis(title=None, labels=False,
+                    ticks=False)),
+            y="Difference:Q",
+            color=alt.Color("Player:N", scale=alt.Scale(
+                            domain=self.player_names, range=self.player_colors),
+                            legend=alt.Legend()),
+            column=alt.Column("Roll:N", header=alt.Header(title=None,
+                              labelOrient="bottom", labelFontSize=22)),
+            tooltip=list(plt_df.columns)
+        ).configure_view(
+            strokeWidth=0
+        ).configure_axis(
+            grid=False
+        ).configure_title(
+            fontSize=32, limit=800, dx=45, dy=-50,
+            font="Arial", align="center", anchor="middle"
+        ).configure_legend(
+            strokeColor="black", padding=10, orient="bottom", cornerRadius=10,
+            direction="horizontal", labelFontSize=10
+        ).properties(
+            title="Roll Differential by Player",
+            width=self.screen_width / 45
+        )
+
+
+        return p_diff_chart
+
+### Need to fill

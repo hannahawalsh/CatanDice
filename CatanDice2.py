@@ -7,7 +7,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-from DiceFunctions import StreamlitStyle as SS, Dice
+from DiceFunctions import StreamlitStyle as SS, Dice, PlotResults
+
 
 
 def main():
@@ -15,18 +16,33 @@ def main():
     ### Set up sidebar
     st.sidebar.title("Game Options")
     players_radio = st.sidebar.radio("Number of Players", [3, 4], index=1)
-    col1, _, col2 = st.sidebar.beta_columns([7, 1, 2])
-    player1 = col1.text_input("Player 1", "Player 1")
-    color1 = col2.color_picker(f"{player1}'s Color", key="c1")
-    player2 = col1.text_input("Player 2", "Player 2")
-    color2 = col2.color_picker(f"{player2}'s Color", key="c2")
-    player3 = col1.text_input("Player 3", "Player 3")
-    color3 = col2.color_picker(f"{player3}'s Color", key="c3")
+
+    pl1 = st.sidebar.beta_container()
+    p1c1, _, p1c2 = pl1.beta_columns([7, 1, 2])
+    player1 = p1c1.text_input("Player 1", "Player 1")
+    color1 = p1c2.color_picker(f"{player1}'s Color", value="#D70404", key="c1")
+
+    pl2 = st.sidebar.beta_container()
+    p2c1, _, p2c2 = pl2.beta_columns([7, 1, 2])
+    player2 = p2c1.text_input("Player 2", "Player 2")
+    color2 = p2c2.color_picker(f"{player2}'s Color", value="#0434E5", key="c2")
+
+    pl3 = st.sidebar.beta_container()
+    p3c1, _, p3c2 = pl2.beta_columns([7, 1, 2])
+    player3 = p3c1.text_input("Player 3", "Player 3")
+    color3 = p3c2.color_picker(f"{player3}'s Color", value="#F76E02", key="c3")
+
     players = {0: player1, 1: player2, 2: player3}
+    player_colors = {0: color1, 1: color2, 2: color3}
     if players_radio == 4:
-        player4 = col1.text_input("Player 4", "Player 4")
-        color4 = col2.color_picker(f"{player4}'s Color", key="c1")
+        pl4 = st.sidebar.beta_container()
+        p4c1, _, p4c2 = pl2.beta_columns([7, 1, 2])
+        player4 = p4c1.text_input("Player 4", "Player 4")
+        color4 = p4c2.color_picker(f"{player4}'s Color", value="#FFFFFF",
+                                   key="c4")
         players[3] = player4
+        player_colors[3] = color4
+
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
     convergence_rate_slider = convergence_rate_slider * 250 + 200
@@ -105,22 +121,7 @@ def main():
     ###
 
 
-    ### Statistics section
-    player_names = [players[k] for k in sorted(players)]
-    fig, stats, turns, freqs = Dice().game_stats(roll_history, player_names)
-    stats_history["updated_turn"] = 0
-    stats_history["fig"] = fig
-    stats_history["stats"] = stats
-    stats_history["turns"] = turns
-    stats_history["frequency_df"] = freqs
-    stats_cont.markdown("## Current Stats:")
 
-    update_plot = stats_cont.button("Get Updated Plot")
-    plot_spot = stats_cont.empty()
-    stats_cont.table(stats_history["stats"])
-    stats_cont.table(stats_history["turns"])
-    if update_plot:
-        plot_spot.write(stats_history["fig"])
 
     ### Display name and number (or starting text and image)
     if not roll_history:
@@ -131,11 +132,24 @@ def main():
         number_text.markdown(SS.get_number_text(roll_history[-1]),
                              unsafe_allow_html=True)
         player_name = players[player_history[-1]]
-        player_name_text.markdown(SS.get_name_text(player_name),
+        player_color = player_colors[player_history[-1]]
+        player_name_text.markdown(SS.get_name_text(player_name, player_color),
                                   unsafe_allow_html=True)
 
+        ### Game Statistics
+        player_names = [players[k] for k in sorted(players)]
+        plotter = PlotResults(roll_history, player_names, player_colors)
 
-    stats_cont.markdown(roll_history)
+        stats_cont.markdown("<h2 style='text-align: center; font-size: 1.5em;"
+                            "font-family: Arial;'> Turn Count </h2>",
+                            unsafe_allow_html=True)
+        stats_cont.table(plotter.get_turn_count())
+        stats_cont.altair_chart(plotter.get_divergence_chart(),
+                                use_container_width=True)
+        stats_cont.altair_chart(plotter.player_diff_chart())
+        stats_cont.altair_chart(plotter.player_roll_chart())
+
+
 
 
 ### Cached Functions
