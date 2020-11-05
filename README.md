@@ -5,4 +5,9 @@ This app uses a script that updates the probability to be not that of two fair d
 
 This app uses [Streamlit](https://www.streamlit.io/), which is an awesome Python package for creating dashboards and small applications.
 
-If you are having trouble installing streamlit, run ```conda install -c conda-forge watchdog``` then ```pip install streamlit```
+If you are having trouble installing streamlit, run  
+```
+conda install -c conda-forge watchdog
+conda install protobuf
+pip install streamlit
+```
