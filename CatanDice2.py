@@ -91,8 +91,6 @@ def main():
                                     random_rate_slider, convergence_rate_slider)
         roll_history.append(next_roll)
 
-
-
     # "Undo" removes last turn from history
     elif undo_button:
         roll_history.pop()
@@ -121,8 +119,6 @@ def main():
     ###
 
 
-
-
     ### Display name and number (or starting text and image)
     if not roll_history:
         number_text.image(dice_image, use_column_width=True)
@@ -144,8 +140,9 @@ def main():
                             "font-family: Arial;'> Turn Count </h2>",
                             unsafe_allow_html=True)
         stats_cont.table(plotter.get_turn_count())
-        stats_cont.altair_chart(plotter.get_divergence_chart(),
-                                use_container_width=True)
+        div_cht, roll_cnt = plotter.get_divergence_chart()
+        stats_cont.altair_chart(div_cht, use_container_width=True)
+        stats_cont.table(roll_cnt)
         stats_cont.altair_chart(plotter.player_diff_chart())
         stats_cont.altair_chart(plotter.player_roll_chart())
 

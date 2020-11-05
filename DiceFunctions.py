@@ -233,13 +233,14 @@ class PlotResults:
     def get_divergence_chart(self):
         """   """
         # Get colors for bars
-        cmap = cm.get_cmap('RdYlGn', 100)
         normalize = lambda s: (s - s.min()) / (s.max() - s.min())
         rdiffs = normalize(self.history_count["Difference"])
-        roll_colors = [colors.to_hex(cmap(int(100 * d))) for d in rdiffs]
+        reds =  [cm.get_cmap('Reds_r', 51)(i) for i in range(51)]
+        reds += reds[::-1]
+        roll_colors = [colors.to_hex(reds[int(100 * d)]) for d in rdiffs]
 
         # Make Altair horizontal bar chart
-        plt_df = self.history_count.round(2)
+        plt_df = self.history_count.round()
         diff_chart = alt.Chart(plt_df).mark_bar(size=30).encode(
             y='Roll:O',
             x='Difference:Q',
@@ -248,19 +249,18 @@ class PlotResults:
             tooltip=list(plt_df.columns)
         ).properties(
             title="Roll Differential from Expected Count",
-            width=self.screen_width / 2,
-            height=alt.Step(32)
-            )
-
-        diff_chart = diff_chart.configure_title(
-            fontSize=32,
-            dy=-50,
-            limit=600,
-            font="Arial",
-            align="center"
+            width=self.screen_width / 4, height=alt.Step(32)
+        ).configure_title(
+            fontSize=32, dy=-50, limit=600, font="Arial", align="center",
+            anchor="middle"
+        ).configure_axis(
+            labelFontSize=14, titleFontSize=16
         )
 
-        return diff_chart
+        roll_count = self.history_count[["Roll", "Count"]].T
+        roll_count.columns = [""] * len(roll_count.columns)
+
+        return diff_chart, roll_count
 
 
     def player_roll_chart(self):
@@ -288,11 +288,9 @@ class PlotResults:
         ).properties(
             title="Roll Count by Player",
             width=self.screen_width / 45
+        ).configure_axis(
+            grid=False, labelFontSize=14, titleFontSize=16
         )
-
-        roll_chart = roll_chart.configure_axis(
-            grid=False, labelFontSize=18
-            )
 
 
         return roll_chart
@@ -314,8 +312,6 @@ class PlotResults:
             tooltip=list(plt_df.columns)
         ).configure_view(
             strokeWidth=0
-        ).configure_axis(
-            grid=False
         ).configure_title(
             fontSize=32, limit=800, dx=45, dy=-50,
             font="Arial", align="center", anchor="middle"
@@ -325,6 +321,8 @@ class PlotResults:
         ).properties(
             title="Roll Differential by Player",
             width=self.screen_width / 45
+        ).configure_axis(
+            grid=False, labelFontSize=14, titleFontSize=16
         )
 
 
