@@ -1,7 +1,13 @@
 # CatanDice
-Catan is such a game of strategy that it's annoying when you're hit with bad luck. Thus, the magical Gambler's Fallacy dice that make Catan an even more strategic game (okay, it's more mathematical than magical). 
+Catan is such a game of strategy that it's annoying when you're hit with bad luck. Thus, this Gambler's Fallacy dice app makes Catan an even more strategic game.  
 
-To run this app, simply download the repository, navigate to the repository in your terminal, and run  
-```streamlit run CatanDice.py```  
-It will open in a browser window, but there is no need for an internet connection.  
-If you are having trouble installing streamlit, run ```conda install -c conda-forge watchdog``` then ```pip install streamlit```
+This app uses a script that updates the probability to be not that of two fair dice, but to be weighted more toward numbers that are "due."
+
+This app uses [Streamlit](https://www.streamlit.io/), which is an awesome Python package for creating dashboards and small applications.
+
+If you are having trouble installing streamlit, run  
+```
+conda install -c conda-forge watchdog
+conda install protobuf
+pip install streamlit
+```
