@@ -45,7 +45,6 @@ def main():
 
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
-    convergence_rate_slider = convergence_rate_slider * 250 + 200
     random_turns_slider = st.sidebar.slider("Starting Random Turns", 1, 32, 8)
 
 
@@ -104,17 +103,17 @@ def main():
     # roll a bunch of times
     elif trial_button:
         n = 50
-        if not player_history:
-            current_player = 0
-        else:
-            current_player = int((player_history[-1] + 1) % len(players))
+        for _ in range(n):
+            if not player_history:
+                current_player = 0
+            else:
+                current_player = int((player_history[-1] + 1) % len(players))
 
-        next_rolls = [Dice().roll(roll_history, random_turns_slider,
-                      random_rate_slider, convergence_rate_slider) for _ in
-                      range(n)]
-        roll_history.extend(next_rolls)
-        next_p = (player_history[-1] + 1) % 4 if player_history else 0
-        player_history.extend([x % 4 for x in range(next_p, n + next_p)])
+            R = Dice().roll(roll_history, random_turns_slider,
+                            random_rate_slider, convergence_rate_slider)
+
+            roll_history.append(R)
+            player_history.append(current_player)
 
 
     ### Display name and number (or starting text and image)
@@ -143,6 +142,8 @@ def main():
         stats_cont.table(roll_cnt)
         stats_cont.altair_chart(plotter.player_diff_chart())
         stats_cont.altair_chart(plotter.player_roll_chart())
+        stats_cont.altair_chart(plotter.all_roll_chart())
+
 
 
 
@@ -168,8 +169,3 @@ if __name__ == "__main__":
     st.set_page_config(page_title="Gambler's Fallacy Dice",
                        page_icon="🎲", layout="centered")
     main()
-
-
-### Future things:
-# Work on math element!
-# Players get colors: change player's names and plot color

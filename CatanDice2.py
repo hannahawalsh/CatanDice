@@ -43,10 +43,10 @@ def main():
         players[3] = player4
         player_colors[3] = color4
 
-    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
-    convergence_rate_slider = convergence_rate_slider * 250 + 200
-    random_turns_slider = st.sidebar.slider("Starting Random Turns", 1, 32, 8)
+    player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
+    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
+    random_turns_slider = st.sidebar.number_input("Starting Turns", 1, 100, 8)
 
 
     ### Set up main page
@@ -54,7 +54,6 @@ def main():
                    "color: gold; background-color: maroon; "
                    "font-family: Georgia;'> CATAN DICE (2) </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
-
     number_text = st.empty()
     player_name_text = st.empty()
     buttons = st.beta_container()
@@ -65,7 +64,8 @@ def main():
     roll_button = b2.button("Roll!")
     undo_button = b3.button("Undo")
     ###
-    trial_button = b2.button("**Roll 50 times**")
+    n_trials = 100
+    trial_button = b2.button(f"**Roll {n_trials} times**")
     ###
 
     ### Get cached variables
@@ -85,11 +85,14 @@ def main():
         player_history.append(current_player)
 
         # Roll the dice
-        next_roll = Dice().new_roll(roll_history, list(players.values()),
-                                    players[current_player],
-                                    random_turns_slider,
-                                    random_rate_slider, convergence_rate_slider)
+        next_roll = Dice().roll_balanced(roll_history.copy(), players_radio,
+                                         random_turns_slider,
+                                         random_rate_slider,
+                                         convergence_rate_slider,
+                                         player_rate_slider)
         roll_history.append(next_roll)
+
+
 
     # "Undo" removes last turn from history
     elif undo_button:
@@ -104,19 +107,19 @@ def main():
     ### Temporary:
     # roll a bunch of times
     elif trial_button:
-        n = 50
-        if not player_history:
-            current_player = 0
-        else:
-            current_player = int((player_history[-1] + 1) % len(players))
-        next_rolls = [Dice().new_roll(roll_history, list(players.values()),
-                      players[current_player], random_turns_slider,
-                      random_rate_slider, convergence_rate_slider) for _ in
-                      range(n)]
-        roll_history.extend(next_rolls)
-        next_p = (player_history[-1] + 1) % 4 if player_history else 0
-        player_history.extend([x % 4 for x in range(next_p, n + next_p)])
-    ###
+        for _ in range(n_trials):
+            if not player_history:
+                current_player = 0
+            else:
+                current_player = int((player_history[-1] + 1) % len(players))
+
+            R  = Dice().roll_balanced(roll_history.copy(), players_radio,
+                                      random_turns_slider, random_rate_slider,
+                                      convergence_rate_slider,
+                                      player_rate_slider)
+            roll_history.append(R)
+            player_history.append(current_player)
+
 
 
     ### Display name and number (or starting text and image)
@@ -136,6 +139,7 @@ def main():
         player_names = [players[k] for k in sorted(players)]
         plotter = PlotResults(roll_history, player_names, player_colors)
 
+
         stats_cont.markdown("<h2 style='text-align: center; font-size: 1.5em;"
                             "font-family: Arial;'> Turn Count </h2>",
                             unsafe_allow_html=True)
@@ -145,7 +149,7 @@ def main():
         stats_cont.table(roll_cnt)
         stats_cont.altair_chart(plotter.player_diff_chart())
         stats_cont.altair_chart(plotter.player_roll_chart())
-
+        stats_cont.altair_chart(plotter.all_roll_chart())
 
 
 
