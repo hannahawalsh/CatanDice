@@ -51,7 +51,7 @@ def main():
 
 
     ### Set up main page
-    title_text = ("<h1 style='text-align: center; font-size: 4.0em; "
+    title_text = ("<h1 style='text-align: center; font-size: 5.0em; "
                    "color: gold; background-color: maroon; "
                    "font-family: Georgia;'> CATAN DICE (experimental) </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
