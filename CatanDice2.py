@@ -60,13 +60,13 @@ def main():
     buttons = st.beta_container()
     stats_cont = st.beta_expander("Game Statistics", False)
 
-    b1, b2, b3 = buttons.beta_columns(3)
+    _, _, b1, _, b2, _, b3, _, _= buttons.beta_columns(9)
     reset_button = b1.button("Reset")
     roll_button = b2.button("Roll!")
     undo_button = b3.button("Undo")
     ###
     n_trials = 100
-    trial_button = b2.button(f"**Roll {n_trials} times**")
+    trial_button = b2.button(f"Roll {n_trials} times")
     ###
 
     ### Get cached variables
