@@ -12,7 +12,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib import colors, cm
 import altair as alt
-import pyautogui
+# import pyautogui
 from sklearn.metrics import mean_squared_error as mse
 
 
