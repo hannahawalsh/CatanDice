@@ -46,13 +46,14 @@ def main():
     convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
     player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
-    random_turns_slider = st.sidebar.number_input("Starting Turns", 1, 100, 8)
+    random_turns_slider = st.sidebar.number_input("Starting Turns",
+                                                  players_radio, value=8)
 
 
     ### Set up main page
     title_text = ("<h1 style='text-align: center; font-size: 4.0em; "
                    "color: gold; background-color: maroon; "
-                   "font-family: Georgia;'> CATAN DICE (2) </h1>")
+                   "font-family: Georgia;'> CATAN DICE (experimental) </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
     number_text = st.empty()
     player_name_text = st.empty()
@@ -85,11 +86,11 @@ def main():
         player_history.append(current_player)
 
         # Roll the dice
-        next_roll = Dice().roll_balanced(roll_history.copy(), players_radio,
-                                         random_turns_slider,
-                                         random_rate_slider,
-                                         convergence_rate_slider,
-                                         player_rate_slider)
+        next_roll = Dice().roll_balanced_2(roll_history.copy(), players_radio,
+                                           random_turns_slider,
+                                           random_rate_slider,
+                                           convergence_rate_slider,
+                                           player_rate_slider)
         roll_history.append(next_roll)
 
 
@@ -113,10 +114,10 @@ def main():
             else:
                 current_player = int((player_history[-1] + 1) % len(players))
 
-            R  = Dice().roll_balanced(roll_history.copy(), players_radio,
-                                      random_turns_slider, random_rate_slider,
-                                      convergence_rate_slider,
-                                      player_rate_slider)
+            R  = Dice().roll_balance_7s(roll_history.copy(), players_radio,
+                                        random_turns_slider, random_rate_slider,
+                                        convergence_rate_slider,
+                                        player_rate_slider)
             roll_history.append(R)
             player_history.append(current_player)
 
@@ -170,12 +171,7 @@ def get_statistics_history():
 
 
 if __name__ == "__main__":
+    st.set_page_config(page_title="Gambler's Fallacy Dice", page_icon="🎲",
+                       layout="centered")
     dice_image = Image.open("DicePic.png")
-    st.set_page_config(page_title="Gambler's Fallacy Dice",
-                       page_icon="🎲", layout="centered")
     main()
-
-
-### Future possible features:
-# Freeze statistics and load on button (not blank spac)
-# Players get colors: change player's names and plot color

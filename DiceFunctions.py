@@ -1,3 +1,9 @@
+"""
+
+"""
+
+
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -8,7 +14,6 @@ from matplotlib import colors, cm
 import altair as alt
 import pyautogui
 from sklearn.metrics import mean_squared_error as mse
-
 
 
 def adjust_colors(color_list):
@@ -70,6 +75,16 @@ class StreamlitStyle:
 
 
 class Dice:
+    def normalize_dict(self, D):
+        """
+        Return a dictionary with values normalized and missing values at 0
+        """
+        new = {k: v / sum(D.values()) for k, v in D.items()}
+        missing_vals = [x for x in range(2, 13) if x not in new.keys()]
+        new = {**new, **{m: 0.0 for m in missing_vals}}
+        return {k: new[k] for k in range(2, 13)}
+
+
     def calculate_frequencies(self, roll_history, player_names):
         """
         Calculate the roll frequencies for the game and each player.
@@ -88,33 +103,15 @@ class Dice:
         return frequencies, player_rolls
 
 
-    def normalize_dict(self, D):
-        """
-        Return a dictionary with values normalized and missing values at 0
-        """
-        new = {k: v / sum(D.values()) for k, v in D.items()}
-        missing_vals = [x for x in range(2, 13) if x not in new.keys()]
-        new = {**new, **{m: 0.0 for m in missing_vals}}
-        return {k: new[k] for k in range(2, 13)}
-
-
-    def gambler_weights(self, rate, current_weights):
+    def gambler_weights(self, rate, history):
         """ """
-        new = {roll: 2 ** (rate * (VAR.fair_wts[roll] -
-               current_weights[roll])) for roll in range(2, 13)}
-        return self.normalize_dict(new)
-
-
-    def gambler_weights_2(self, rate, history):
-        """ """
-        normalize = lambda x: x / x.sum()
         current_dist = (pd.Series(history).value_counts(normalize=True)
                           .reindex(range(2, 13)).fillna(0))
         fair_dist = pd.Series(VAR.fair_wts)
         diff =  fair_dist - current_dist
-        f_rate = rate * 500
+        f_rate = 200 + rate * 250
         step = {idx: 2 ** (val * f_rate) for idx, val in diff.items()}
-        return {idx: v / sum(step.values()) for idx, v in step.items()}
+        return self.normalize_dict(step)
 
 
     def roll(self, roll_history, first, random_rate, convergence_rate):
@@ -124,7 +121,7 @@ class Dice:
             roll = np.random.choice(list(VAR.fair_wts.keys()),
                                     p=list(VAR.fair_wts.values()))
         else:
-            new_weights = self.gambler_weights_2(convergence_rate, roll_history)
+            new_weights = self.gambler_weights(convergence_rate, roll_history)
             roll = np.random.choice(list(new_weights.keys()),
                                     p=list(new_weights.values()))
         return roll
@@ -134,6 +131,8 @@ class Dice:
                       convergence_rate, player_weight):
         """
         """
+        # Roll history for current player
+        player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
         # Roll normally
         if len(roll_history) < (first * n_players) // 2:
             return self.roll(roll_history, first, random_rate, convergence_rate)
@@ -147,11 +146,88 @@ class Dice:
         # Balance player and game distributions
         else:
             regular_roll = self.roll(roll_history, 0, 0, convergence_rate)
-            player_roll_history = roll_history[::-1 * n_players]
             player_roll = self.roll(player_roll_history, 0, 0, convergence_rate)
             player_weight /= 20
             roll = np.random.choice([player_roll, regular_roll],
                                     p=[player_weight, 1 - player_weight])
+            return roll
+
+
+    def roll_balanced_2(self, roll_history, n_players, first, random_rate,
+                      convergence_rate, player_weight):
+        """
+        """
+        # Roll history for current player
+        player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
+
+        # Roll normally
+        # normal_roll =
+        if len(player_roll_history) < first // 2:
+            return self.roll(roll_history, first, random_rate, convergence_rate)
+
+        # Randomly roll with fair weights
+        elif np.random.random() <= random_rate:
+            roll = np.random.choice(list(VAR.fair_wts.keys()),
+                                    p=list(VAR.fair_wts.values()))
+            return roll
+
+        # Balance player and game distributions
+        else:
+            g_weights_regular = self.gambler_weights(convergence_rate,
+                                                     roll_history)
+            g_weights_player = self.gambler_weights(convergence_rate,
+                                                    player_roll_history)
+            p_weight = min(95, len(roll_history)) / 100
+            new_weights = {r: g_weights_player[r] * p_weight + p * (1-p_weight)
+                           for r, p in g_weights_regular.items()}
+            new_weights = self.normalize_dict(new_weights)
+            roll = np.random.choice(list(new_weights.keys()),
+                                    p=list(new_weights.values()))
+            return roll
+
+
+    def roll_balance_7s(self, roll_history, n_players, first, random_rate,
+                        convergence_rate, player_weight):
+        """
+        """
+        # Roll history for current player
+        player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
+
+        if len(roll_history) < first:
+            return self.roll(roll_history, first, random_rate, convergence_rate)
+
+        elif np.random.random() <= random_rate:
+            roll = np.random.choice(list(VAR.fair_wts.keys()),
+                                    p=list(VAR.fair_wts.values()))
+            return roll
+
+        else:
+
+            g_weights_1 = self.gambler_weights(convergence_rate, roll_history)
+            g_weights_2 = self.gambler_weights(convergence_rate,
+                                               player_roll_history)
+
+            def reduce_7(W, red):
+                W[7] /= red
+                return self.normalize_dict(W)
+
+            if player_roll_history[-1] == player_roll_history[-2] == 7:
+                reduce = 5
+            elif player_roll_history[-1] == 7:
+                reduce = 2
+            elif player_roll_history[-2] == 7:
+                reduce = 1.5
+            else:
+                reduce = 1
+            g_weights_1 = reduce_7(g_weights_1, reduce)
+            g_weights_2 = reduce_7(g_weights_2, reduce)
+            p_weight = min(len(roll_history) / 25 * player_weight,
+                           player_weight) # increases as game goes on
+            new_weights = {r: g_weights_1[r] * p_weight + p * (1-p_weight)
+                           for r, p in g_weights_2.items()}
+            new_weights = self.normalize_dict(new_weights)
+            roll = np.random.choice(list(new_weights.keys()),
+                                    p=list(new_weights.values()))
             return roll
 
 
