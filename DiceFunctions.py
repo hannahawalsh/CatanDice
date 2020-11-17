@@ -238,7 +238,8 @@ class PlotResults:
         self.roll_history = roll_history
         self.player_names = player_names
         self.player_colors = adjust_colors(list(player_colors.values()))
-        self.screen_width  = pyautogui.size().width
+        # self.screen_width  = pyautogui.size().width
+        self.screen_width = 1440
 
         # Data frame of all turns with customers
         n = len(roll_history)
