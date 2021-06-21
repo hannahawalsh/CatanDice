@@ -14,56 +14,45 @@ from DiceFunctions import StreamlitStyle as SS, Dice, PlotResults
 def main():
     """ """
     ### Set up sidebar
+    max_players = 6
     st.sidebar.title("Game Options")
-    players_radio = st.sidebar.radio("Number of Players", [3, 4], index=1)
+    num_players = st.sidebar.selectbox("Number of Players",
+                                       range(3, max_players+1), index=1)
+    players = {}
+    player_colors = {}
+    for i in range(max_players):
+        if num_players > i:
+            plr = st.sidebar.beta_container()
+            # col1, _, col2 = plr.beta_columns([7, 1, 2])
+            col1, col2 = plr.beta_columns([7,4])
+            player = col1.text_input(f"Player {i+1}", f"Player {i+1}")
+            color = col2.selectbox("", SS.color_names, index=i,
+                                   key=f"c{i+1}",)
+            players[i] = player
+            player_colors[i] = SS.player_colors[color]
 
-    pl1 = st.sidebar.beta_container()
-    p1c1, _, p1c2 = pl1.beta_columns([7, 1, 2])
-    player1 = p1c1.text_input("Player 1", "Player 1")
-    color1 = p1c2.color_picker(f"{player1}'s Color", value="#D70404", key="c1")
-
-    pl2 = st.sidebar.beta_container()
-    p2c1, _, p2c2 = pl2.beta_columns([7, 1, 2])
-    player2 = p2c1.text_input("Player 2", "Player 2")
-    color2 = p2c2.color_picker(f"{player2}'s Color", value="#0434E5", key="c2")
-
-    pl3 = st.sidebar.beta_container()
-    p3c1, _, p3c2 = pl2.beta_columns([7, 1, 2])
-    player3 = p3c1.text_input("Player 3", "Player 3")
-    color3 = p3c2.color_picker(f"{player3}'s Color", value="#F76E02", key="c3")
-
-    players = {0: player1, 1: player2, 2: player3}
-    player_colors = {0: color1, 1: color2, 2: color3}
-    if players_radio == 4:
-        pl4 = st.sidebar.beta_container()
-        p4c1, _, p4c2 = pl2.beta_columns([7, 1, 2])
-        player4 = p4c1.text_input("Player 4", "Player 4")
-        color4 = p4c2.color_picker(f"{player4}'s Color", value="#FFFFFF",
-                                   key="c4")
-        players[3] = player4
-        player_colors[3] = color4
-
-    convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
+    convergence_rate_slider = st.sidebar.slider("Convergence Rate",
+                                                0.0, 1.0, 0.75)
     player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     random_turns_slider = st.sidebar.number_input("Starting Turns",
-                                                  players_radio, value=8)
+                                                  min_value=num_players,
+                                                  value=num_players * 2)
 
 
     ### Set up main page
     title_text = ("<h1 style='text-align: center; font-size: 5.0em; "
-                   "color: gold; background-color: maroon; "
+                   F"color: {SS.CatanGold}; background-color: {SS.CatanRed}; "
                    "font-family: Georgia;'> CATAN DICE </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
     number_text = st.empty()
+    _, b1 = st.beta_columns([21, 30])
+    roll_button = b1.button("ROLL DICE")
     player_name_text = st.empty()
-    buttons = st.beta_container()
-    stats_cont = st.beta_expander("Game Statistics", False)
-
-    _, _, b1, _, b2, _, b3, _, _= buttons.beta_columns(9)
-    reset_button = b1.button("Reset")
-    roll_button = b2.button("Roll!")
+    _, b2, b3 = st.beta_columns([11, 15, 15])
+    reset_button = b2.button("Reset")
     undo_button = b3.button("Undo")
+    stats_cont = st.beta_expander("Game Statistics", False)
 
 
     ### Get cached variables
@@ -71,6 +60,25 @@ def main():
     player_history = get_player_history()
     stats_history = get_statistics_history()
 
+    ### Testing Button:
+    n_tests = 200
+    testing_button = stats_cont.button(f"Roll {n_tests} Times")
+    if testing_button:
+        for _ in range(n_tests):
+            if not player_history:
+                current_player = 0
+            else:
+                current_player = int((player_history[-1] + 1) % len(players))
+            player_name = players[current_player]
+            player_history.append(current_player)
+            # Roll the dice
+            next_roll = Dice().roll_balanced(roll_history.copy(),
+                                             num_players,
+                                             random_turns_slider,
+                                             random_rate_slider,
+                                             convergence_rate_slider,
+                                             player_rate_slider)
+            roll_history.append(next_roll)
 
     ### Actions
     if roll_button:
@@ -83,11 +91,12 @@ def main():
         player_history.append(current_player)
 
         # Roll the dice
-        next_roll = Dice().roll_balanced_2(roll_history.copy(), players_radio,
-                                           random_turns_slider,
-                                           random_rate_slider,
-                                           convergence_rate_slider,
-                                           player_rate_slider)
+        next_roll = Dice().roll_balanced(roll_history.copy(),
+                                         num_players,
+                                         random_turns_slider,
+                                         random_rate_slider,
+                                         convergence_rate_slider,
+                                         player_rate_slider)
         roll_history.append(next_roll)
 
 
@@ -130,6 +139,8 @@ def main():
         stats_cont.altair_chart(plotter.player_diff_chart())
         stats_cont.altair_chart(plotter.player_roll_chart())
         stats_cont.altair_chart(plotter.all_roll_chart())
+
+
 
 
 

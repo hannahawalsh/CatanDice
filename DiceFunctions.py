@@ -1,7 +1,6 @@
 """
-
+This script contains the functions and style definitions for CatanDice.py
 """
-
 
 
 import numpy as np
@@ -12,12 +11,11 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib import colors, cm
 import altair as alt
-# import pyautogui
 from sklearn.metrics import mean_squared_error as mse
 
 
 def adjust_colors(color_list):
-    """ If a color is too light, make it a bit darker"""
+    """ If a color is too light, make it a bit darker. """
     for i, clr in enumerate(color_list):
         rgb_col = colors.to_rgb(clr)
         if sum(rgb_col) >= 2.5:
@@ -32,6 +30,20 @@ class VAR:
 
 
 class StreamlitStyle:
+    # Colors
+    CatanRed = "#C62028"
+    CatanGold = "#FACC0B"
+
+    player_colors = {
+        "red": "#F12627",
+        "blue": "#044F9B",
+        "orange": "#F37824",
+        "white": "#FFFFFF",
+        "green": "#50833C",
+        "brown": "#914B1D"
+        }
+    color_names = list(player_colors.keys())
+
 
     def get_number_text(n):
         """ Given a number, return the html for displaying it"""
@@ -44,33 +56,42 @@ class StreamlitStyle:
 
     def get_name_text(name, color="#000000"):
         """ Given a player's name, return the html for displaying it """
-        color = adjust_colors([color])[0]
-        font_color = "black" if sum(colors.to_rgb(color)) >= 2.0 else "white"
+        outline = "black" if color == "#FFFFFF" else "transparent"
 
-        style = ("<h1 style='text-align: center; font-size: 4.0em; font-family:"
-                 f" Arial; padding: 10px; color: {font_color}; background: "
-                 f"{color};'> <span> {name} </span> </h1>")
+        style_dict = {
+            "text-align": "center",
+            "font-size": "4.0em",
+            "font-family": "Arial",
+            "padding": "10px",
+            "color": color,
+            "background": "transparent",
+            "-webkit-text-stroke-width": "2px",
+            "-webkit-text-stroke-color": outline,
+        }
+        style_string = "; ".join([f"{k}: {v}" for k, v in style_dict.items()])
+        style = (f"<h1 style='{style_string}'> <span> {name} </span> </h1>")
         return style
 
 
-    def style_frequencies(df):
-        color_results = pd.DataFrame(columns=df.columns, index=df.index)
-        norm = colors.Normalize(0.0, 2.5)
-        for nm, col in df.items():
-            if nm in ["Roll", "Theoretical"]:
-                color_results[nm] = ""
-            else:
-                chg = (pd.DataFrame.from_dict({"x": df["Theoretical"],
-                                               "xhat": col}, orient="index")
-                                   .pct_change().iloc[-1].abs().values)
-                all_colors = [colors.rgb2hex(x) for x in
-                              plt.cm.get_cmap("Reds")(norm(chg))]
-                color_results[nm] = pd.Series([f"background-color: {clr}" for clr
-                                               in all_colors])
-
-        to_color = lambda col, color_map_df: color_map_df[col.name]
-        return df.style.apply(to_color, args=(color_results,),
-                              axis=0).set_precision(3)
+    # def style_frequencies(df):
+    #     """ Style the frequency plot. """
+    #     color_results = pd.DataFrame(columns=df.columns, index=df.index)
+    #     norm = colors.Normalize(0.0, 2.5)
+    #     for nm, col in df.items():
+    #         if nm in ["Roll", "Theoretical"]:
+    #             color_results[nm] = ""
+    #         else:
+    #             chg = (pd.DataFrame.from_dict({"x": df["Theoretical"],
+    #                                            "xhat": col}, orient="index")
+    #                                .pct_change().iloc[-1].abs().values)
+    #             all_colors = [colors.rgb2hex(x) for x in
+    #                           plt.cm.get_cmap("Reds")(norm(chg))]
+    #             color_results[nm] = pd.Series([f"background-color: {clr}" for clr
+    #                                            in all_colors])
+    #
+    #     to_color = lambda col, color_map_df: color_map_df[col.name]
+    #     return df.style.apply(to_color, args=(color_results,),
+    #                           axis=0).set_precision(3)
 
 
 
@@ -104,7 +125,10 @@ class Dice:
 
 
     def gambler_weights(self, rate, history):
-        """ """
+        """
+        Return new weights according to the gambler's fallacy such that the
+        distribution of rolls actively converges to the expected distribution.
+        """
         current_dist = (pd.Series(history).value_counts(normalize=True)
                           .reindex(range(2, 13)).fillna(0))
         fair_dist = pd.Series(VAR.fair_wts)
@@ -116,6 +140,11 @@ class Dice:
 
     def roll(self, roll_history, first, random_rate, convergence_rate):
         """
+        Perform a dice roll:
+            - If the roll is within the first <first> rolls, roll randomly
+            - According to the random rate, choose whether to roll randomly
+            - Otherwise, calculate the new weights and roll according to the
+              gambler's fallacy weights
         """
         if len(roll_history) < first or np.random.random() <= random_rate:
             roll = np.random.choice(list(VAR.fair_wts.keys()),
@@ -130,10 +159,17 @@ class Dice:
     def roll_balanced(self, roll_history, n_players, first, random_rate,
                       convergence_rate, player_weight):
         """
+        Perform a dice roll according to each player's history:
+            - If the roll is within the first <first> rolls, roll randomly
+            - According to the random rate, choose whether to roll randomly
+            - Otherwise, calculate the new weights and roll according to the
+              gambler's fallacy weights
+            - Player weights get more important as game progresses
         """
         # Roll history for current player
         player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
-        # Roll normally
+
+        # Roll normally if not enough turns have passed
         if len(roll_history) < (first * n_players) // 2:
             return self.roll(roll_history, first, random_rate, convergence_rate)
 
@@ -145,41 +181,12 @@ class Dice:
 
         # Balance player and game distributions
         else:
-            regular_roll = self.roll(roll_history, 0, 0, convergence_rate)
-            player_roll = self.roll(player_roll_history, 0, 0, convergence_rate)
-            player_weight /= 20
-            roll = np.random.choice([player_roll, regular_roll],
-                                    p=[player_weight, 1 - player_weight])
-            return roll
-
-
-    def roll_balanced_2(self, roll_history, n_players, first, random_rate,
-                      convergence_rate, player_weight):
-        """
-        """
-        # Roll history for current player
-        player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
-
-        # Roll normally
-        # normal_roll =
-        if len(player_roll_history) < first // 2:
-            return self.roll(roll_history, first, random_rate, convergence_rate)
-
-        # Randomly roll with fair weights
-        elif np.random.random() <= random_rate:
-            roll = np.random.choice(list(VAR.fair_wts.keys()),
-                                    p=list(VAR.fair_wts.values()))
-            return roll
-
-        # Balance player and game distributions
-        else:
-            g_weights_regular = self.gambler_weights(convergence_rate,
-                                                     roll_history)
+            g_weights_all = self.gambler_weights(convergence_rate, roll_history)
             g_weights_player = self.gambler_weights(convergence_rate,
                                                     player_roll_history)
-            p_weight = min(95, len(roll_history)) / 100
+            p_weight = min(0.95, len(roll_history) / 45)
             new_weights = {r: g_weights_player[r] * p_weight + p * (1-p_weight)
-                           for r, p in g_weights_regular.items()}
+                           for r, p in g_weights_all.items()}
             new_weights = self.normalize_dict(new_weights)
             roll = np.random.choice(list(new_weights.keys()),
                                     p=list(new_weights.values()))
@@ -189,6 +196,7 @@ class Dice:
     def roll_balance_7s(self, roll_history, n_players, first, random_rate,
                         convergence_rate, player_weight):
         """
+        Try to balance the sevens: NOT CURRENTLY IN USE OR WORKING
         """
         # Roll history for current player
         player_roll_history = roll_history[(-1 * n_players)::(-1 * n_players)]
@@ -234,11 +242,10 @@ class Dice:
 
 class PlotResults:
     def __init__(self, roll_history, player_names, player_colors):
-        """   """
+
         self.roll_history = roll_history
         self.player_names = player_names
         self.player_colors = adjust_colors(list(player_colors.values()))
-        # self.screen_width  = pyautogui.size().width
         self.screen_width = 1440
 
         # Data frame of all turns with customers
@@ -267,14 +274,20 @@ class PlotResults:
 
 
     def get_turn_count(self):
-        cnts = pd.DataFrame(self.turns.groupby("Player").count().to_dict("index"))
+        """ Count total number of turns per player and overall. """
+        cnts = pd.DataFrame(
+            self.turns.groupby("Player").count().to_dict("index")
+        )
         cnts["All"] = len(self.turns)
         cnts.index = ["Turn Count"]
         return cnts
 
 
     def get_divergence_chart(self):
-        """   """
+        """
+        Calculate and style the chart of how actual rolls diverged from the
+        expected distribution.
+        """
         # Get colors for bars
         normalize = lambda s: (s - s.min()) / (s.max() - s.min())
         rdiffs = normalize(self.history_count["Difference"])
@@ -310,7 +323,10 @@ class PlotResults:
 
 
     def player_diff_chart(self):
-        """ Create an Altair chart showing difference from expected rolls """
+        """
+        Create an Altair chart showing difference from expected rolls for each
+        player.
+        """
         # Create chart
         plt_df = self.player_count.round(2)
         p_diff_chart = alt.Chart(plt_df).mark_bar(strokeWidth=0.5,
@@ -343,21 +359,21 @@ class PlotResults:
 
 
     def all_roll_chart(self):
-        """ """
+        """
+        """
         # Make Altair bar chart
-        gold = "#FFD700"
         w = self.screen_width / 2.5
-
         plt_df = self.history_count.round(2)
-        bars = alt.Chart(plt_df).mark_bar(color=gold, strokeWidth=0).encode(
+        bars = alt.Chart(plt_df).mark_bar(color=StreamlitStyle.CatanGold,
+                                          strokeWidth=0).encode(
             x="Roll:O",
             y="Count:Q",
             tooltip=list(plt_df.columns)
         )
 
         # Add lines at Theoretical values
-        marks = alt.Chart(plt_df).mark_tick(color="maroon", width=50,
-                                             thickness=3).encode(
+        marks = alt.Chart(plt_df).mark_tick(color=StreamlitStyle.CatanRed,
+                                             width=50, thickness=3).encode(
             x="Roll:O",
             y='Expected:Q',
             tooltip=list(plt_df.columns)
@@ -380,7 +396,7 @@ class PlotResults:
 
     def player_roll_chart(self):
         """ """
-        # Make Altair bark chart
+        # Make Altair bar chart
         plt_df = self.player_count.round(2)
         roll_chart = alt.Chart(plt_df).mark_bar(strokeWidth=0.5,
                                                 stroke="black").encode(
