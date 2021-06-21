@@ -1,7 +1,6 @@
 """
-
+This script contains the functions and style definitions for CatanDice.py
 """
-
 
 
 import numpy as np
@@ -12,7 +11,6 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib import colors, cm
 import altair as alt
-# import pyautogui
 from sklearn.metrics import mean_squared_error as mse
 
 
@@ -33,7 +31,10 @@ class VAR:
 
 class StreamlitStyle:
 
-    # Player colors
+    # Colors
+    CatanRed = "#C62028"
+    CatanGold = "#FACC0B"
+
     player_colors = {
         "red": "#F12627",
         "blue": "#044F9B",
@@ -55,12 +56,20 @@ class StreamlitStyle:
 
     def get_name_text(name, color="#000000"):
         """ Given a player's name, return the html for displaying it """
-        color = adjust_colors([color])[0]
-        font_color = "black" if sum(colors.to_rgb(color)) >= 2.0 else "white"
+        outline = "black" if color == "#FFFFFF" else "transparent"
 
-        style = ("<h1 style='text-align: center; font-size: 4.0em; font-family:"
-                 f" Arial; padding: 10px; color: {font_color}; background: "
-                 f"{color};'> <span> {name} </span> </h1>")
+        style_dict = {
+            "text-align": "center",
+            "font-size": "4.0em",
+            "font-family": "Arial",
+            "padding": "10px",
+            "color": color,
+            "background": "transparent",
+            "-webkit-text-stroke-width": "2px",
+            "-webkit-text-stroke-color": outline,
+        }
+        style_string = "; ".join([f"{k}: {v}" for k, v in style_dict.items()])
+        style = (f"<h1 style='{style_string}'> <span> {name} </span> </h1>")
         return style
 
 

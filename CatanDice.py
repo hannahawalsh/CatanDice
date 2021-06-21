@@ -17,11 +17,9 @@ def main():
     max_players = 6
     st.sidebar.title("Game Options")
     num_players = st.sidebar.selectbox("Number of Players",
-                                       range(3, max_players+1),
-                                       index=1)
+                                       range(3, max_players+1), index=1)
     players = {}
     player_colors = {}
-
     for i in range(max_players):
         if num_players > i:
             plr = st.sidebar.beta_container()
@@ -43,18 +41,17 @@ def main():
 
     ### Set up main page
     title_text = ("<h1 style='text-align: center; font-size: 5.0em; "
-                   "color: gold; background-color: maroon; "
+                   F"color: {SS.CatanGold}; background-color: {SS.CatanRed}; "
                    "font-family: Georgia;'> CATAN DICE </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
     number_text = st.empty()
+    _, b1 = st.beta_columns([21, 30])
+    roll_button = b1.button("ROLL DICE")
     player_name_text = st.empty()
-    buttons = st.beta_container()
-    stats_cont = st.beta_expander("Game Statistics", False)
-
-    _, _, b1, _, b2, _, b3, _, _= buttons.beta_columns(9)
-    reset_button = b1.button("Reset")
-    roll_button = b2.button("Roll!")
+    _, b2, b3 = st.beta_columns([11, 15, 15])
+    reset_button = b2.button("Reset")
     undo_button = b3.button("Undo")
+    stats_cont = st.beta_expander("Game Statistics", False)
 
 
     ### Get cached variables

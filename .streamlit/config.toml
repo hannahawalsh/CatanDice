@@ -1,4 +1,11 @@
 [theme]
-base="light"
-primaryColor="#c62028"
-secondaryBackgroundColor="#fff7e5"
+base = "light"
+primaryColor = "#C62028"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#FFF7E5"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+runOnSave = false
+baseUrlPath = "catan"
