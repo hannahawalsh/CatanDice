@@ -1,7 +1,7 @@
 pandas>=1.0.1
 numpy>=1.16.4
 matplotlib>=3.1.0
-altair>=4.1.0
+altair==4.1.0
 streamlit>=21.1.2
 Pillow>=8.0.1
 scikit_learn>=0.23.2
