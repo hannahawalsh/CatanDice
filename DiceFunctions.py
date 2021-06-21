@@ -33,6 +33,17 @@ class VAR:
 
 class StreamlitStyle:
 
+    # Player colors
+    player_colors = {
+        "red": "#F12627",
+        "blue": "#044F9B",
+        "orange": "#F37824",
+        "white": "#FFFFFF",
+        "green": "#50833C",
+        "brown": "#914B1D"
+        }
+    color_names = list(player_colors.keys())
+
     def get_number_text(n):
         """ Given a number, return the html for displaying it"""
         color = "red" if n in [6, 8] else "black"
