@@ -31,7 +31,8 @@ def main():
             players[i] = player
             player_colors[i] = SS.player_colors[color]
 
-    convergence_rate_slider = st.sidebar.slider("Convergence Rate", 0., 1., 0.5)
+    convergence_rate_slider = st.sidebar.slider("Convergence Rate",
+                                                0.0, 1.0, 0.75)
     player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
     random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
     random_turns_slider = st.sidebar.number_input("Starting Turns",
@@ -59,6 +60,25 @@ def main():
     player_history = get_player_history()
     stats_history = get_statistics_history()
 
+    ### Testing Button:
+    n_tests = 200
+    testing_button = stats_cont.button(f"Roll {n_tests} Times")
+    if testing_button:
+        for _ in range(n_tests):
+            if not player_history:
+                current_player = 0
+            else:
+                current_player = int((player_history[-1] + 1) % len(players))
+            player_name = players[current_player]
+            player_history.append(current_player)
+            # Roll the dice
+            next_roll = Dice().roll_balanced(roll_history.copy(),
+                                             num_players,
+                                             random_turns_slider,
+                                             random_rate_slider,
+                                             convergence_rate_slider,
+                                             player_rate_slider)
+            roll_history.append(next_roll)
 
     ### Actions
     if roll_button:
@@ -71,11 +91,12 @@ def main():
         player_history.append(current_player)
 
         # Roll the dice
-        next_roll = Dice().roll_balanced_2(roll_history.copy(), num_players,
-                                           random_turns_slider,
-                                           random_rate_slider,
-                                           convergence_rate_slider,
-                                           player_rate_slider)
+        next_roll = Dice().roll_balanced(roll_history.copy(),
+                                         num_players,
+                                         random_turns_slider,
+                                         random_rate_slider,
+                                         convergence_rate_slider,
+                                         player_rate_slider)
         roll_history.append(next_roll)
 
 
@@ -118,6 +139,8 @@ def main():
         stats_cont.altair_chart(plotter.player_diff_chart())
         stats_cont.altair_chart(plotter.player_roll_chart())
         stats_cont.altair_chart(plotter.all_roll_chart())
+
+
 
 
 
