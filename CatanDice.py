@@ -60,8 +60,6 @@ def main():
         st.session_state.roll_history = []
     if "player_history" not in st.session_state:
         st.session_state.player_history = []
-    # if "stats_history" not in st.session_state:
-    #     st.session_state.stats_history = {}
 
 
     ### Testing Button:
