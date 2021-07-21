@@ -142,12 +142,13 @@ def main():
                                 "Turn Count</h2>",
                                 unsafe_allow_html=True)
             stats_cont.table(plotter.get_turn_count())
+            stats_cont.altair_chart(plotter.all_roll_chart())
             div_cht, roll_cnt = plotter.get_divergence_chart()
             stats_cont.altair_chart(div_cht, use_container_width=True)
             stats_cont.table(roll_cnt)
             stats_cont.altair_chart(plotter.player_diff_chart())
             stats_cont.altair_chart(plotter.player_roll_chart())
-            stats_cont.altair_chart(plotter.all_roll_chart())
+
 
 
 
