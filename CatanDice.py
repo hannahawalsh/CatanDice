@@ -12,7 +12,7 @@ from DiceFunctions import StreamlitStyle as SS, Dice, PlotResults
 
 
 def main():
-    """ """
+    """ This is the main body of the dice app. """
     ### Set up sidebar
     max_players = 6
     st.sidebar.title("Game Options")
@@ -55,79 +55,88 @@ def main():
     stats_cont = st.beta_expander("Game Statistics", False)
 
 
-    ### Get cached variables
-    roll_history = get_roll_history()
-    player_history = get_player_history()
-    stats_history = get_statistics_history()
+    ### Use session state
+    if "roll_history" not in st.session_state:
+        st.session_state.roll_history = []
+    if "player_history" not in st.session_state:
+        st.session_state.player_history = []
+    # if "stats_history" not in st.session_state:
+    #     st.session_state.stats_history = {}
+
 
     ### Testing Button:
     n_tests = 200
     testing_button = stats_cont.button(f"Roll {n_tests} Times")
     if testing_button:
         for _ in range(n_tests):
-            if not player_history:
+            if not st.session_state.player_history:
                 current_player = 0
             else:
-                current_player = int((player_history[-1] + 1) % len(players))
+                current_player = int((st.session_state.player_history[-1] + 1) % len(players))
             player_name = players[current_player]
-            player_history.append(current_player)
+            st.session_state.player_history.append(current_player)
             # Roll the dice
-            next_roll = Dice().roll_balanced(roll_history.copy(),
-                                             num_players,
-                                             random_turns_slider,
-                                             random_rate_slider,
-                                             convergence_rate_slider,
-                                             player_rate_slider)
-            roll_history.append(next_roll)
+            next_roll = Dice().roll_balanced(
+                st.session_state.roll_history.copy(),
+                num_players,
+                random_turns_slider,
+                random_rate_slider,
+                convergence_rate_slider,
+                player_rate_slider)
+            st.session_state.roll_history.append(next_roll)
 
     ### Actions
     if roll_button:
         # Update the player
-        if not player_history:
+        if not st.session_state.player_history:
             current_player = 0
         else:
-            current_player = int((player_history[-1] + 1) % len(players))
+            current_player = int((st.session_state.player_history[-1] + 1) % len(players))
         player_name = players[current_player]
-        player_history.append(current_player)
+        st.session_state.player_history.append(current_player)
 
         # Roll the dice
-        next_roll = Dice().roll_balanced(roll_history.copy(),
-                                         num_players,
-                                         random_turns_slider,
-                                         random_rate_slider,
-                                         convergence_rate_slider,
-                                         player_rate_slider)
-        roll_history.append(next_roll)
+        next_roll = Dice().roll_balanced(
+            st.session_state.roll_history.copy(),
+            num_players,
+            random_turns_slider,
+            random_rate_slider,
+            convergence_rate_slider,
+            player_rate_slider)
+        st.session_state.roll_history.append(next_roll)
 
 
     # "Undo" removes last turn from history
     elif undo_button:
-        roll_history.pop()
-        player_history.pop()
+        st.session_state.roll_history.pop()
+        st.session_state.player_history.pop()
 
     # "Reset" clears the cache and the history
     elif reset_button:
         st.caching.clear_cache()
-        roll_history = player_history = None
+        st.session_state.roll_history = []
+        st.session_state.player_history = []
 
 
     ### Display name and number (or starting text and image)
-    if not roll_history:
+    if not st.session_state.roll_history:
         number_text.image(dice_image, use_column_width=True)
         player_name_text.markdown(SS.get_name_text("Roll to start game!"),
                                   unsafe_allow_html=True)
     else:
-        number_text.markdown(SS.get_number_text(roll_history[-1]),
-                             unsafe_allow_html=True)
-        player_name = players[player_history[-1]]
-        player_color = player_colors[player_history[-1]]
+        number_text.markdown(
+            SS.get_number_text(st.session_state.roll_history[-1]),
+            unsafe_allow_html=True)
+        player_name = players[st.session_state.player_history[-1]]
+        player_color = player_colors[st.session_state.player_history[-1]]
         player_name_text.markdown(SS.get_name_text(player_name, player_color),
                                   unsafe_allow_html=True)
 
         ### Game Statistics
-        if len(roll_history) > 1:
+        if len(st.session_state.roll_history) > 1:
             player_names = [players[k] for k in sorted(players)]
-            plotter = PlotResults(roll_history, player_names, player_colors)
+            plotter = PlotResults(st.session_state.roll_history,
+                                  player_names, player_colors)
 
 
             stats_cont.markdown("<h2 style='text-align: center; "
@@ -141,24 +150,6 @@ def main():
             stats_cont.altair_chart(plotter.player_diff_chart())
             stats_cont.altair_chart(plotter.player_roll_chart())
             stats_cont.altair_chart(plotter.all_roll_chart())
-
-
-
-
-
-### Cached Functions
-@st.cache(allow_output_mutation=True)
-def get_roll_history():
-    return []
-
-@st.cache(allow_output_mutation=True)
-def get_player_history():
-    return []
-
-@st.cache(allow_output_mutation=True)
-def get_statistics_history():
-    return {}
-
 
 
 
