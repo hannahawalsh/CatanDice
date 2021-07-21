@@ -125,20 +125,22 @@ def main():
                                   unsafe_allow_html=True)
 
         ### Game Statistics
-        player_names = [players[k] for k in sorted(players)]
-        plotter = PlotResults(roll_history, player_names, player_colors)
+        if len(roll_history) > 1:
+            player_names = [players[k] for k in sorted(players)]
+            plotter = PlotResults(roll_history, player_names, player_colors)
 
 
-        stats_cont.markdown("<h2 style='text-align: center; font-size: 1.5em;"
-                            "font-family: Arial;'> Turn Count </h2>",
-                            unsafe_allow_html=True)
-        stats_cont.table(plotter.get_turn_count())
-        div_cht, roll_cnt = plotter.get_divergence_chart()
-        stats_cont.altair_chart(div_cht, use_container_width=True)
-        stats_cont.table(roll_cnt)
-        stats_cont.altair_chart(plotter.player_diff_chart())
-        stats_cont.altair_chart(plotter.player_roll_chart())
-        stats_cont.altair_chart(plotter.all_roll_chart())
+            stats_cont.markdown("<h2 style='text-align: center; "
+                                "font-size: 1.5em; font-family: Arial;'>"
+                                "Turn Count</h2>",
+                                unsafe_allow_html=True)
+            stats_cont.table(plotter.get_turn_count())
+            div_cht, roll_cnt = plotter.get_divergence_chart()
+            stats_cont.altair_chart(div_cht, use_container_width=True)
+            stats_cont.table(roll_cnt)
+            stats_cont.altair_chart(plotter.player_diff_chart())
+            stats_cont.altair_chart(plotter.player_roll_chart())
+            stats_cont.altair_chart(plotter.all_roll_chart())
 
 
 
