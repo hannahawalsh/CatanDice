@@ -22,9 +22,9 @@ def main():
     player_colors = {}
     for i in range(max_players):
         if num_players > i:
-            plr = st.sidebar.beta_container()
-            # col1, _, col2 = plr.beta_columns([7, 1, 2])
-            col1, col2 = plr.beta_columns([7,4])
+            plr = st.sidebar.container()
+            # col1, _, col2 = plr.columns([7, 1, 2])
+            col1, col2 = plr.columns([7,4])
             player = col1.text_input(f"Player {i+1}", f"Player {i+1}")
             color = col2.selectbox("", SS.color_names, index=i,
                                    key=f"c{i+1}",)
@@ -46,13 +46,13 @@ def main():
                    "font-family: Georgia;'> CATAN DICE </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
     number_text = st.empty()
-    _, b1 = st.beta_columns([21, 30])
+    _, b1 = st.columns([21, 30])
     roll_button = b1.button("ROLL DICE")
     player_name_text = st.empty()
-    _, b2, b3 = st.beta_columns([11, 15, 15])
+    _, b2, b3 = st.columns([11, 15, 15])
     reset_button = b2.button("Reset")
     undo_button = b3.button("Undo")
-    stats_cont = st.beta_expander("Game Statistics", False)
+    stats_cont = st.expander("Game Statistics", False)
 
 
     ### Use session state
@@ -111,7 +111,7 @@ def main():
 
     # "Reset" clears the cache and the history
     elif reset_button:
-        st.caching.clear_cache()
+        #st.caching.clear_cache()
         st.session_state.roll_history = []
         st.session_state.player_history = []
 
