@@ -34,7 +34,7 @@ def main():
     convergence_rate_slider = st.sidebar.slider("Convergence Rate",
                                                 0.0, 1.0, 0.75)
     player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
-    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
+    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.1)
     random_turns_slider = st.sidebar.number_input("Starting Turns",
                                                   min_value=num_players,
                                                   value=num_players * 2)
@@ -111,7 +111,7 @@ def main():
 
     # "Reset" clears the cache and the history
     elif reset_button:
-        #st.caching.clear_cache()
+        st.caching.clear_cache()
         st.session_state.roll_history = []
         st.session_state.player_history = []
 
@@ -135,19 +135,19 @@ def main():
             player_names = [players[k] for k in sorted(players)]
             plotter = PlotResults(st.session_state.roll_history,
                                   player_names, player_colors)
+            div_cht, roll_cnt = plotter.get_divergence_chart()
 
-
+            stats_cont.altair_chart(plotter.all_roll_chart())
+            stats_cont.table(roll_cnt)
             stats_cont.markdown("<h2 style='text-align: center; "
                                 "font-size: 1.5em; font-family: Arial;'>"
                                 "Turn Count</h2>",
                                 unsafe_allow_html=True)
             stats_cont.table(plotter.get_turn_count())
-            div_cht, roll_cnt = plotter.get_divergence_chart()
             stats_cont.altair_chart(div_cht, use_container_width=True)
-            stats_cont.table(roll_cnt)
             stats_cont.altair_chart(plotter.player_diff_chart())
             stats_cont.altair_chart(plotter.player_roll_chart())
-            stats_cont.altair_chart(plotter.all_roll_chart())
+
 
 
 
