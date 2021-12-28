@@ -315,8 +315,7 @@ class PlotResults:
             labelFontSize=14, titleFontSize=16
         )
 
-        roll_count = self.history_count[["Roll", "Count"]].T
-        roll_count.columns = [""] * len(roll_count.columns)
+        roll_count = self.history_count.set_index("Roll")[["Count"]].T
 
         return diff_chart, roll_count
 

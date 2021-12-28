@@ -22,9 +22,9 @@ def main():
     player_colors = {}
     for i in range(max_players):
         if num_players > i:
-            plr = st.sidebar.beta_container()
-            # col1, _, col2 = plr.beta_columns([7, 1, 2])
-            col1, col2 = plr.beta_columns([7,4])
+            plr = st.sidebar.container()
+            # col1, _, col2 = plr.columns([7, 1, 2])
+            col1, col2 = plr.columns([7,4])
             player = col1.text_input(f"Player {i+1}", f"Player {i+1}")
             color = col2.selectbox("", SS.color_names, index=i,
                                    key=f"c{i+1}",)
@@ -34,7 +34,7 @@ def main():
     convergence_rate_slider = st.sidebar.slider("Convergence Rate",
                                                 0.0, 1.0, 0.75)
     player_rate_slider = st.sidebar.slider("Player Weight", 0., 1., 0.75)
-    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.15)
+    random_rate_slider = st.sidebar.slider("Randomness Parameter", 0., 1., 0.1)
     random_turns_slider = st.sidebar.number_input("Starting Turns",
                                                   min_value=num_players,
                                                   value=num_players * 2)
@@ -46,13 +46,13 @@ def main():
                    "font-family: Georgia;'> CATAN DICE </h1>")
     st.markdown(title_text, unsafe_allow_html=True)
     number_text = st.empty()
-    _, b1 = st.beta_columns([21, 30])
+    _, b1 = st.columns([21, 30])
     roll_button = b1.button("ROLL DICE")
     player_name_text = st.empty()
-    _, b2, b3 = st.beta_columns([11, 15, 15])
+    _, b2, b3 = st.columns([11, 15, 15])
     reset_button = b2.button("Reset")
     undo_button = b3.button("Undo")
-    stats_cont = st.beta_expander("Game Statistics", False)
+    stats_cont = st.expander("Game Statistics", False)
 
 
     ### Use session state
@@ -135,17 +135,16 @@ def main():
             player_names = [players[k] for k in sorted(players)]
             plotter = PlotResults(st.session_state.roll_history,
                                   player_names, player_colors)
+            div_cht, roll_cnt = plotter.get_divergence_chart()
 
-
+            stats_cont.altair_chart(plotter.all_roll_chart())
+            stats_cont.table(roll_cnt)
             stats_cont.markdown("<h2 style='text-align: center; "
                                 "font-size: 1.5em; font-family: Arial;'>"
                                 "Turn Count</h2>",
                                 unsafe_allow_html=True)
             stats_cont.table(plotter.get_turn_count())
-            stats_cont.altair_chart(plotter.all_roll_chart())
-            div_cht, roll_cnt = plotter.get_divergence_chart()
             stats_cont.altair_chart(div_cht, use_container_width=True)
-            stats_cont.table(roll_cnt)
             stats_cont.altair_chart(plotter.player_diff_chart())
             stats_cont.altair_chart(plotter.player_roll_chart())
 
