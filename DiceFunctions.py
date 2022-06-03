@@ -48,7 +48,7 @@ class StreamlitStyle:
     def get_number_text(n):
         """ Given a number, return the html for displaying it"""
         color = "red" if n in [6, 8] else "black"
-        style = ("<h1 style='text-align: center; font-size: 20.0em; "
+        style = ("<h1 style='text-align: center; font-size: 15.0em; "
                  f"font-family: Arial Black; padding: 0px; color: {color};'> "
                  f"{n} </h1>")
         return style
