@@ -11,7 +11,6 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib import colors, cm
 import altair as alt
-from sklearn.metrics import mean_squared_error as mse
 
 
 def adjust_colors(color_list):
