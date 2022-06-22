@@ -1,6 +1,6 @@
-altair==4.2.0
-matplotlib==3.3.2
-numpy==1.19.2
-pandas==1.3.4
-Pillow==9.1.1
-streamlit==1.10.0
+altair~=4.2
+matplotlib~=3.3
+numpy>=1.15
+pandas~=1.3
+Pillow~=9.1
+streamlit~=1.10.0
